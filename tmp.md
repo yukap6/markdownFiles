@@ -1,5 +1,7 @@
 # JavaScript 正则
 
+> 给出正则方案，写出解题思路
+
 ## 基础知识
 
 JS 中用于正则操作的方法，共有6个，字符串实例4个，正则实例2个：
@@ -176,5 +178,41 @@ function numberSeperateWithComma(num) {
 > 其次，将目标数字进行三个一组匹配并插入逗号','分隔符，正则为 `/(\d{3})/g`，替换方式为 `str.replace(reg, '$&,')`，这里的 $& 表示当前匹配子串
 > 接着，处理边界，最后插入的逗号不能在单词边界，即必须紧邻任何数字，所以正则调整为 `/(\d{3})(?=\d)/g`
 > 最后，将处理好的结果进行逆向排序，产生目标字符串
+
+
+**练习7**：写一个方法把一个数字末尾的连续0变成9，如1230000变成1239999
+
+解法(1)
+
+```
+function replaceNumEndCharacterToAnother(num, endCharactor, anotherCharactor) {
+  var reg = new RegExp(endCharactor + '+$', 'g');
+  var r = String(num);
+  return r.replace(reg, function(match){
+    return match.replace(new RegExp(endCharactor, 'g'), String(anotherCharactor));
+  });
+}
+
+var s5 = 5230300010200000;
+replaceNumEndCharacterToAnother(s5, 0, 9); // 1234999999
+```
+
+解法(2)
+
+```
+"5230300010200000".replace(/0(?=(0+$)|\b)/g, 9);
+```
+
+解法(3)
+
+```
+"5230300010200000".replace(/0(?=(0+|0?)$)/g, 9);
+```
+
+解法(4)
+
+```
+"5230300010200000".replace(/(?=(0+$))0/g,9);
+```
 
 
