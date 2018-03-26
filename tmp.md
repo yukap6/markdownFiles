@@ -1,31 +1,126 @@
 # JavaScript 正则
 
-> 给出正则方案，写出解题思路
+> JavaScript 中用于正则操作的方法，共有6个，字符串实例4个，正则实例2个。JavaScript 的正则引擎属于传统 NFA 类型，大部分语法及使用都兼容 Perl 语言的正则表达式，但不支持逆序环视以及固化分组（或者占有优先量词）。
 
 ## 基础知识
 
-JS 中用于正则操作的方法，共有6个，字符串实例4个，正则实例2个：
+### 正则实例的 2 个方法
+
+[RegExp#test](http://devdocs.io/javascript/global_objects/regexp/test)
+
+语法：`regexObj.test(str)`。
+
+参数：目标字符串。
+
+返回值：`true/false`。目标字符串中存在和正则表达式匹配的子字符串，则返回 `true`，否则返回 `false`。
+
+> 如果正则表达式有 `/g` 修饰符，则正则实例 `regexObj` 的 `lastIndex` 属性会随着 `test()` 方法的执行而变化(同 `exec`)，如果需要从字符串开始位置重新匹配，则需要将 `regexObj.lastIndex` 置为 0（可以理解为类似 C 语言里的指针移动）。
+
+示例：
+
+```
+var regex = /foo/g;
+
+// regex.lastIndex 为 0
+regex.test('foo'); // true
+
+// regex.lastIndex 为 3，表示从位置 3 开始匹配
+regex.test('foo'); // false
+```
+
+[RegExp#exec](http://devdocs.io/javascript/global_objects/regexp/exec)
+
+语法：`regexObj.exec(str)`。
+
+返回值：匹配失败返回 `null`，匹配成功则返回一个数组，其中数组的元素为 `[match, p1...pn, offset, wholeInput]`，`match` 对应匹配的文本，`p1-pn` 对应每个子捕获，`offset` 表示匹配出现的位置，`wholeInput` 表示原始目标字符串。如果使用了 `/g` 修饰符，需要循环执行匹配，直到字符串末尾（注意不要把正则实例的定义放在循环判断之内，否则会造成无限循环，因为每次定义正则实例的时候，都会初始化该正则实例的 `lastIndex` 属性为 0）。
+
+示例：
+
+```
+// 没有 `/g` 修饰符的情况
+var re = /quick\s(brown).+?(jumps)/ig;
+var result = re.exec('The Quick Brown Fox Jumps Over The Lazy Dog');
+console.log(result); // ["Quick Brown Fox Jumps", "Brown", "Jumps", index: 4, input: "The Quick Brown Fox Jumps Over The Lazy Dog"]
+// result[0] 是 "Quick Brown Fox Jumps"，表示完整匹配的文本；
+// result[1-2] 是 "Brown" 和 "Jumps"，表示捕获组括号对应的匹配；
+// result.index 为 4，表示完整匹配在目标字符串中的位置
+// result.input 表示原始目标字符串
+
+// 有 `/g` 修饰符的情况
+var myRe = /ab*/g;
+var str = 'abbcdefabh';
+var myArray;
+while ((myArray = myRe.exec(str)) !== null) {
+  var msg = 'Found ' + myArray[0] + '. ';
+  msg += 'Next match starts at ' + myRe.lastIndex;
+  console.log(msg);
+}
+// 结果是
+// Found abb. Next match starts at 3
+// Found ab. Next match starts at 9
+```
+
+### 字符串实例和正则相关的 4 个方法
 
 [String#search](http://devdocs.io/javascript/global_objects/string/search)
-> 参数默认要求是一个正则表达式，如果不是正则表达式，则会强制使用 `new RegExp` 将其转换为正则表达式
+
+语法：`str.search(regexp)`
+
+参数：参数默认要求是一个正则表达式，如果不是正则表达式，则会强制使用 `new RegExp` 将其转换为正则表达式。
+
+返回值：返回字符串中和正则表达式匹配的第一处索引，如果没有匹配，则返回 -1。
+
+> 因为这里是匹配正则表达式在字符串中第一次匹配时出现的位置，所以修饰符 `/g` 是非必须的，也不影响最终结果
+
+示例：
+
+```
+var str = "hey JudE";
+var re = /[A-Z]/g;
+var re2 = /[.]/g;
+console.log(str.search(re)); // 4
+console.log(str.search(re2)); // -1
+```
 
 [String#replace](http://devdocs.io/javascript/global_objects/string/replace)
-> 语法：`str.replace(regexp|substr, newSubstr|function)` 
-> 第二个参数可以是函数，其中 function 的参数是：function (match, p1, pn.., offset, wholeString)
-> 
-> `newSubStr` 里 \$\$ 表示 \$, \$& 表示匹配到的子字符串, \$\` 表示匹配字符串往前的部分, \$' 表示匹配字符串往后的部分，\$n 表示第 n 个子匹配
+
+语法：`str.replace(regexp|substr, newSubstr|function)` 
+
+参数：第一个参数为要搜索的正则表达式或者子字符串，第二个参数为要替换的子字符串或者可执行函数，该函数会依次应用到每个匹配并返回新的替换文本。
+
+第二个参数分两种情况
+
+* 类型为字符串 `newSubStr` 的时候，`newSubStr` 里 \$\$ 表示 \$, \$& 表示匹配到的子字符串，\$\` 表示匹配字符串前面的部分，\$' 表示匹配字符串后面的部分，\$n 表示第 n 个子匹配
+* 类型为函数 `function` 的时候，`function` 的参数分别是：`function (match, p1, pn.., offset, wholeString)`，`match` 对应匹配到的文本，`p1-pn` 表示每个捕获括号对应的子匹配，`offset` 表示该次匹配在字符串中的索引，`wholeString` 则是完整的目标字符串。
+
+返回值：返回替换后生成的新字符串，不修改原始字符串。
+
+示例：
+
+```
+function replacer(match, p1, p2, p3, offset, string) {
+  // p1 is nondigits, p2 digits, and p3 non-alphanumerics
+  return [p1, p2, p3].join(' - ');
+}
+var newString = 'abc12345#$*%'.replace(/([^\d]*)(\d*)([^\w]*)/, replacer);
+console.log(newString);  // abc - 12345 - #$*%
+```
 
 [String#split](http://devdocs.io/javascript/global_objects/string/split)
-> 语法：`str.split([separator[, limit]])`
-> 第二个可选参数可以限制最多分割的数目
+
+语法：`str.split([separator[, limit]])`
+
+参数：第一个参数为分隔符[可选]，第二个参数限制最多分割的数目[可选]。
+
+> 如果分隔符是空字符串 "", 则目标字符串会按照单个字符进行分割；
 > 
-> 如果分隔符是空字符串 "", 则目标字符串会按照单个字符进行分割
+> 如果分隔符未找到或者不提供，则返回包含原始字符串的数组；
 > 
-> 如果分隔符未找到或者不提供，则返回包含原始字符串的数组
-> 
-> 如果目标字符串是空字符串，则split() 返回包含一个空字符串的数组，如果目标字符串和分隔符都是空字符串，则返回一个空数组
+> 如果目标字符串是空字符串，则split() 返回包含一个空字符串的数组，如果目标字符串和分隔符都是空字符串，则返回一个空数组；
 >
-> 如果分隔符是一个包含子捕获组的正则表达式，则子捕获组会被叠加到目标数组里，如下示例 [并非所有浏览器支持]
+> 如果分隔符是一个包含子捕获组的正则表达式，则子捕获组会被叠加到目标数组里，如下示例 [并非所有浏览器支持]；
+
+示例：
 
 ```
 var myString = 'Hello 1 word. Sentence number 2.';
@@ -35,39 +130,50 @@ console.log(splits);
 // [ "Hello ", "1", " word. Sentence number ", "2", "." ]
 ```
 
-
 [String#match](http://devdocs.io/javascript/global_objects/string/match)
 
-> 语法：`str.match(regexp)`
-> 同 search 方法，参数默认要求是一个正则表达式，如果不是正则表达式，则会强制使用 `new RegExp` 将其转换为正则表达式
-> 
-> 如果参数被忽略，则会返回包含一个空字符串元素的数组 `['']`
-> 
-> 如果正则表达式不包含 `g` 修饰符，则执行结果同 `RegExp.exec()`；如果包含 `g` 修饰符，则返回的数组包含所有匹配的子字符串（而不再是匹配对象），详见练习3
-> 
+语法：`str.match(regexp)`。
 
-[RegExp#test](http://devdocs.io/javascript/global_objects/regexp/test)
+参数：参数默认要求是一个正则表达式，如果不是正则表达式，则会强制使用 `new RegExp` 将其转换为正则表达式。
 
-> 语法：`regexObj.test(str)`
-> 如果正则表达式有 `g` 修饰符，则 `lastIndex` 属性会随着 `test()` 方法的使用而增加(同 `exec`)，如下
+> 如果参数被忽略，则会返回包含一个空字符串元素的数组 `['']`；
+> 
+> 如果正则表达式不包含 `/g` 修饰符，则执行结果同 `RegExp.exec()`，返回的数组为匹配对象；如果包含 `/g` 修饰符，则返回的数组包含所有匹配的子字符串（而不再是匹配对象）。
+
+示例：
 
 ```
-var regex = /foo/g;
+// 不包含 /g 修饰符的情况
+var str = 'For more information, see Chapter 3.4.5.1';
+var re = /see (chapter \d+(\.\d)*)/i;
+var found = str.match(re);
 
-// regex.lastIndex is at 0
-regex.test('foo'); // true
+console.log(found);
 
-// regex.lastIndex is now at 3
-regex.test('foo'); // false
+// logs [ 'see Chapter 3.4.5.1',
+//        'Chapter 3.4.5.1',
+//        '.1',
+//        index: 22,
+//        input: 'For more information, see Chapter 3.4.5.1' ]
+
+// found[0] 'see Chapter 3.4.5.1' 是完整匹配的文本；
+// found[1] 'Chapter 3.4.5.1' 由 '(chapter \d+(\.\d)*)' 子表达式捕获；
+// found[2] '.1' 由 '(\.\d)' 捕获；
+// index: 22 表示完整匹配出现的索引位置，从 0 开始计数；
+// input: ... 表示原始目标字符串。
+
+// 包含 /g 修饰符的情况
+var str = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+var regexp = /[A-E]/gi;
+var matches_array = str.match(regexp);
+
+console.log(matches_array);
+// ['A', 'B', 'C', 'D', 'E', 'a', 'b', 'c', 'd', 'e']
 ```
-
-[RegExp#exec](http://devdocs.io/javascript/global_objects/regexp/exec)
-
-> 语法：`regexObj.exec(str)`
 
 ## 实战训练
 
-**练习1**：var s1 = "get-element-by-id"; 给定这样一个连字符串，写一个function转换为驼峰命名法形式的字符串 getElementById
+**练习1**：`var s1 = "get-element-by-id";` 给定这样一个连字符串，写一个 `function` 转换为驼峰命名法形式的字符串 `getElementById`。
 
 解法(1)：
 
@@ -80,7 +186,7 @@ function toHump(str) {
 }
 ```
 
-解法(2：)
+解法(2)：
 
 ```
 function toHump(str) {
